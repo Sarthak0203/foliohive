@@ -6,7 +6,7 @@ export default function ProjectCard({ project }) {
             <h2 className="text-xl font-bold mb-2">{project?.title}</h2>
             <p className="text-gray-600 mb-4">{project?.description}</p>
             <Link
-                href={`/projects/${project?.}`}
+                href={`/projects/${project?._id}`}
                 className="text-blue-500 font-semibold"
             >
                 View Details

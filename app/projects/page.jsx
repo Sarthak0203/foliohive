@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import Link from "next/link";
 
 export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
@@ -104,6 +105,7 @@ export default function ProjectsPage() {
 
             return (
               <Card key={project._id} className="hover:shadow-xl transition-shadow">
+                <Link href = {`/projects/${project._id}`}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
@@ -164,6 +166,7 @@ export default function ProjectsPage() {
                     </div>
                   </div>
                 </CardContent>
+                </Link>
               </Card>
             );
           })}
