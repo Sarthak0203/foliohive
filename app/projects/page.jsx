@@ -1,16 +1,21 @@
 // app/projects/page.jsx
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import AuthContext from "@/context/AuthContext";
 
 export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
+  const router = useRouter();
+  const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext);
+  
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -32,7 +37,7 @@ export default function ProjectsPage() {
     fetchProjects();
   }, []);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -67,6 +72,10 @@ export default function ProjectsPage() {
         return 'bg-blue-100 text-blue-800';
     }
   };
+
+  if(!isAuthenticated){
+    router.push('/auth/login');
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

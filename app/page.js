@@ -28,7 +28,7 @@ export default function HomePage() {
           An interactive platform to highlight, analyze, and share your work.
         </p>
         <Link
-          href="/register"
+          href="/auth/login"
           className="mt-6 inline-block px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow-lg hover:bg-gray-100"
         >
           Get Started

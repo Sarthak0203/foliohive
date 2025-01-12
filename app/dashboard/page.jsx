@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
 import { Button } from '@/components/ui/Button';
@@ -7,11 +7,16 @@ import { Bell, Settings, Share2, Trophy, Plus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Avatar, AvatarFallback } from "@/Components/ui/Avatar";
 import Link from "next/link";
+import AuthContext from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, user:authUser, loading } = useContext(AuthContext);
+  const [loading1, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
+  const router = useRouter();
+
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -33,7 +38,7 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  if (loading) {
+  if (loading || loading1) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -59,6 +64,10 @@ const Dashboard = () => {
     views: project.views,
     engagement: project.totalEngagement
   }));
+
+  if(!isAuthenticated){
+    router.push('/auth/login');
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

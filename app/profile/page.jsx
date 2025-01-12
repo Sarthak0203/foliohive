@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Camera, Mail, Briefcase, MapPin, Link as LinkIcon, Github, Twitter, Linkedin, Link } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 
 
@@ -11,6 +12,27 @@ export default function ProfilePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
+    const router = useRouter();
+    useEffect(() => {
+        const checkAuthentication = async () => {
+          try {
+            const response = await fetch("/api/auth/check", {
+              method: "GET",
+              credentials: "include", // Include cookies in the request
+            });
+    
+            if (!response.ok) {
+              // Redirect to login if not authenticated
+              router.push("/auth/login");
+            }
+          } catch (error) {
+            console.error("Authentication check failed:", error);
+            router.push("/auth/login");
+          }
+        };
+    
+        checkAuthentication();
+      }, [router]);
     
     const [profile, setProfile] = useState({
         name: "John Doe",

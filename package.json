@@ -9,9 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "chart.js": "^4.4.7",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.471.0",
     "mongodb": "^6.12.0",
     "mongoose": "^8.9.4",
@@ -22,7 +26,9 @@
     "react-qr-code": "^2.0.15",
     "recharts": "^2.15.0",
     "seed": "^0.4.4",
-    "slugify": "^1.6.6"
+    "slugify": "^1.6.6",
+    "tailwind-merge": "^2.6.0",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "postcss": "^8",
