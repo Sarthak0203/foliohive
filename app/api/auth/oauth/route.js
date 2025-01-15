@@ -3,9 +3,20 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getProviderAuthUrl, handleOAuthCallback } from '@/lib/oauthUtils';
 import { generateTokenPair } from '@/lib/auth';
+import User from '@/models/User';
+import { connectToDatabase } from '@/lib/mongodb';
+
+const demoProfilePictures = [
+  '/images/avatar1.jpg',
+  '/images/avatar2.jpg',
+  '/images/avatar3.png',
+  // Add more demo pictures as needed
+];
 
 export async function GET(request) {
   try {
+    await connectToDatabase(); // Connect to the database
+
     const url = new URL(request.url);
     const provider = url.searchParams.get('provider');
     const code = url.searchParams.get('code');
@@ -19,15 +30,21 @@ export async function GET(request) {
       const result = await handleOAuthCallback(provider, code);
 
       if (result.success) {
-        // Ensure the user data has the required _id property
-        const user = {
-          _id: result.data.providerId, // or generate a new _id if needed
-          ...result.data,
-        };
+        let user = await User.findOne({ email: result.data.email });
+
+        if (!user) {
+          // Create a new user if not found
+          user = new User({
+            name: result.data.name,
+            email: result.data.email,
+            // Use the provider's profile picture if available, otherwise choose a random demo picture
+            profilePicture: result.data.picture || demoProfilePictures[Math.floor(Math.random() * demoProfilePictures.length)],
+          });
+          await user.save();
+        }
 
         const { accessToken, refreshToken } = generateTokenPair(user);
 
-        // Await cookies() before setting cookies
         const cookieStore = await cookies();
         await cookieStore.set('accessToken', accessToken, {
           httpOnly: true,
@@ -42,7 +59,6 @@ export async function GET(request) {
           maxAge: 7 * 24 * 60 * 60,
         });
 
-        // Use absolute URL for redirect
         return NextResponse.redirect(new URL('/dashboard', request.url), 307);
       }
 

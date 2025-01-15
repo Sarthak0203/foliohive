@@ -6,6 +6,13 @@ import { connectToDatabase } from '@/lib/mongodb';
 import bcrypt from 'bcrypt';
 
 // app/api/auth/register/route.js
+const demoProfilePictures = [
+  '/images/avatar1.jpg',
+  '/images/avatar2.jpg',
+  '/images/avatar3.png',
+  // Add more demo pictures as needed
+];
+
 export async function POST(request) {
   try {
     await connectToDatabase();
@@ -22,23 +29,15 @@ export async function POST(request) {
     }
 
     const hashedPassword = await hashPassword(password);
-    
-    // Debug before save
-    console.log('=== Debug Registration ===');
-    console.log('Password before hash:', password);
-    console.log('Generated hash:', hashedPassword);
-    console.log('Verify before save:', await bcrypt.compare(password, hashedPassword));
 
-    // Create and save user ONCE
     const user = new User({
       name,
       email,
       password: hashedPassword,
+      profilePicture: demoProfilePictures[Math.floor(Math.random() * demoProfilePictures.length)], // Assign a random demo picture
     });
-    console.log('User before save:', user);
 
-    // Save only once
-    await user.save()
+    await user.save();
     // Verify after save
     const savedUser = await User.findOne({ email }).lean(); // Use lean() to get plain object
     console.log('Stored hash:', savedUser.password);

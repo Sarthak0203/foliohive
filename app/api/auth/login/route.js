@@ -22,19 +22,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    console.log('=== Debug Login ===');
-
-    console.log('user:', user);
-    // Check if raw passwords would match
-    console.log('Raw password match:', password === 'Asdf@123');
-    // Generate a new hash and compare
-    const newHash = await hashPassword(password);
-    // Try comparing with both the stored hash and a new hash
-    console.log('Compare with stored hash:', await bcrypt.compare(password, user.password));
-    console.log('Compare with new hash:', await bcrypt.compare(password, newHash));
-    // Check hash format
-    console.log('Stored hash format valid:', user.password.startsWith('$2b$'));
-
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
