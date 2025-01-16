@@ -34,7 +34,7 @@ export async function POST(request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60,
+      maxAge: 1500 * 60,
     });
     await cookieStore.set('refreshToken', refreshToken, { // Await cookieStore.set()
       httpOnly: true,

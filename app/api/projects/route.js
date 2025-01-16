@@ -2,6 +2,10 @@
 
 import { NextResponse } from 'next/server';
 import { getAllProjects, createProject } from '@/lib/projects';
+import { connectToDatabase } from '@/lib/mongodb';
+import { cookies } from 'next/headers';
+import { verifyAccessToken } from '@/lib/auth';
+import Project from '@/models/Project';
 
 export async function GET() {
   try {
@@ -13,14 +17,40 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const projectData = await request.json(); // Parse the incoming project data
-
   try {
-    const result = await createProject(projectData); // Create a new project
-    return result.success
-      ? NextResponse.json(result.data) // Return the created project
-      : NextResponse.json({ error: result.error }, { status: 400 }); // Return error if creation fails
+    await connectToDatabase();
+
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken');
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = await verifyAccessToken(accessToken.value);
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { name, description, githubLink, demoLink, technologies, tags, status } = await request.json();
+
+    const project = new Project({
+      name,
+      description,
+      githubLink,
+      demoLink,
+      technologies: technologies.split(',').map(tech => tech.trim()),
+      tags: tags.split(',').map(tag => tag.trim()),
+      status: status || 'draft',
+      owner: userId.id,
+    });
+
+    await project.save();
+
+    return NextResponse.json(project, { status: 201 });
   } catch (error) {
+    console.error('Project creation error:', error);
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }

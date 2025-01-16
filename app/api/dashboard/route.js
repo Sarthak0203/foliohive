@@ -1,17 +1,33 @@
-// app/api/dashboard/route.js
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers'; // Import cookies
 import { connectToDatabase } from '@/lib/mongodb';
 import Project from '@/models/Project';
 import User from '@/models/User';
+import { verifyAccessToken } from '@/lib/auth'; // Import your JWT verification function
 
 export async function GET(request) {
   try {
     await connectToDatabase();
-    
-    // Get user ID from the session (you'll need to implement authentication)
-    // For now, we'll get the first user as a placeholder
-    const user = await User.findOne({ role: 'user' });
-    
+
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken');
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = await verifyAccessToken(accessToken.value);
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await User.findById(userId.id.toString());
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     // Fetch user's projects with aggregated metrics
     const projects = await Project.aggregate([
       { $match: { owner: user._id } },
@@ -33,18 +49,18 @@ export async function GET(request) {
     // Get overall stats
     const stats = {
       totalProjects: await Project.countDocuments({ owner: user._id }),
-      publishedProjects: await Project.countDocuments({ 
-        owner: user._id, 
-        status: 'published' 
+      publishedProjects: await Project.countDocuments({
+        owner: user._id,
+        status: 'published'
       }),
-      totalViews: projects.reduce((sum, p) => sum + p.views, 0),
-      totalEngagement: projects.reduce((sum, p) => sum + p.totalEngagement, 0)
+      totalViews: projects.reduce((sum, p) => sum + (p.views || 0), 0), // Handle null views
+      totalEngagement: projects.reduce((sum, p) => sum + (p.totalEngagement || 0), 0) // Handle null engagement
     };
 
-    // Get recent activity
+    // Get recent activity (handle null comments)
     const recentActivity = await Project.aggregate([
       { $match: { owner: user._id } },
-      { $unwind: '$comments' },
+      { $unwind: { path: '$comments', preserveNullAndEmptyArrays: true } }, // Preserve null comments
       { $sort: { updatedAt: -1 } },
       { $limit: 5 },
       {

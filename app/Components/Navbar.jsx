@@ -25,6 +25,9 @@ export default function Navbar() {
           <Link href="/projects" className="hover:text-gray-300">
             Projects
           </Link>
+          <Link href="/projects/new" className="hover:text-gray-300">
+            New Project
+          </Link>
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}

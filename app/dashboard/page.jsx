@@ -1,9 +1,8 @@
 "use client"
 import React, { useContext, useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-
 import { Button } from '@/components/ui/Button';
-import { Bell, Settings, Share2, Trophy, Plus } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Avatar, AvatarFallback } from "@/Components/ui/Avatar";
 import Link from "next/link";
@@ -11,19 +10,30 @@ import AuthContext from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 const Dashboard = () => {
-  const { isAuthenticated, user:authUser, loading } = useContext(AuthContext);
+  const { isAuthenticated, user: authUser, loading } = useContext(AuthContext);
   const [loading1, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const router = useRouter();
 
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({
+    newComments: true,
+    newLikes: true,
+    newFollowers: true,
+    projectUpdates: true,
+  });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch('/api/dashboard');
+        const response = await fetch('/api/dashboard', {
+          credentials: 'include',
+        });
         if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch dashboard data');
         }
         const data = await response.json();
         setDashboardData(data);
@@ -35,8 +45,16 @@ const Dashboard = () => {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated && !loading) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, loading, router]);
 
   if (loading || loading1) {
     return (
@@ -56,22 +74,64 @@ const Dashboard = () => {
     );
   }
 
+  if (!dashboardData) {
+    return <div>No data available.</div>;
+  }
+
   const { user, projects, recentActivity, topProjects } = dashboardData;
 
-  // Prepare analytics data for the chart
   const analyticsData = projects.map(project => ({
     name: project.name,
     views: project.views,
     engagement: project.totalEngagement
   }));
 
-  if(!isAuthenticated){
-    router.push('/auth/login');
-  }
+  const handleOpenNotifications = () => {
+    setShowNotifications(true);
+  };
+
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
+  };
+
+  const handleOpenSettings = () => {
+    setShowSettings(true);
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+  };
+
+  const handleNotificationSettingChange = (event) => {
+    const { name, checked } = event.target;
+    setNotificationSettings(prevSettings => ({
+      ...prevSettings,
+      [name]: checked,
+    }));
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notifications: notificationSettings }),
+      });
+
+      if (response.ok) {
+        console.log('Settings saved successfully');
+        handleCloseSettings();
+      } else {
+        const data = await response.json();
+        console.error('Failed to save settings:', data.error);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header Section */}
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center space-x-4">
           <Avatar className="h-16 w-16">
@@ -82,17 +142,17 @@ const Dashboard = () => {
             <p className="text-gray-600">{user.email}</p>
           </div>
         </div>
+
         <div className="flex space-x-4">
-          <button className="p-2 rounded-full hover:bg-gray-100">
+          <button className="p-2 rounded-full hover:bg-gray-100" onClick={handleOpenNotifications}>
             <Bell className="h-6 w-6" />
           </button>
-          <button className="p-2 rounded-full hover:bg-gray-100">
+          <button className="p-2 rounded-full hover:bg-gray-100" onClick={handleOpenSettings}>
             <Settings className="h-6 w-6" />
           </button>
         </div>
       </div>
 
-      {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -128,11 +188,8 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Projects and Analytics Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Analytics Chart */}
           <Card>
             <CardHeader>
               <CardTitle>Project Performance</CardTitle>
@@ -151,7 +208,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Project List */}
           <Card>
             <CardHeader>
               <CardTitle>Your Projects</CardTitle>
@@ -159,35 +215,33 @@ const Dashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 {projects.map((project) => (
-                    <Link key={project._id} href={`/projects/${project._id}`}>
-                  <div key={project._id} className="p-4 bg-white rounded-lg shadow hover:shadow-md">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold">{project.name}</h3>
-                      <span className={`px-2 py-1 rounded-full text-sm ${
-                        project.status === 'published' ? 'bg-green-100 text-green-800' :
-                        project.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {project.status}
-                      </span>
+                  <Link key={project._id} href={`/projects/${project._id}`}>
+                    <div className="p-4 bg-white rounded-lg shadow hover:shadow-md">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold">{project.name}</h3>
+                        <span className={`px-2 py-1 rounded-full text-sm ${
+                          project.status === 'published' ? 'bg-green-100 text-green-800' :
+                            project.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                          }`}>
+                          {project.status}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mt-2">{project.description}</p>
+                      <div className="mt-4 flex space-x-4 text-sm text-gray-500">
+                        <span>👁️ {project.views} views</span>
+                        <span>❤️ {project.likes} likes</span>
+                        <span>💬 {project.comments.length} comments</span>
+                      </div>
                     </div>
-                    <p className="text-gray-600 mt-2">{project.description}</p>
-                    <div className="mt-4 flex space-x-4 text-sm text-gray-500">
-                      <span>👁️ {project.views} views</span>
-                      <span>❤️ {project.likes} likes</span>
-                      <span>💬 {project.comments.length} comments</span>
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
                 ))}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sidebar Content */}
         <div className="space-y-6">
-          {/* Recent Activity */}
           <Card>
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
@@ -206,7 +260,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Top Projects */}
           <Card>
             <CardHeader>
               <CardTitle>Top Performing</CardTitle>
@@ -227,6 +280,95 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <h2 className="text-lg font-bold mb-4">Notifications</h2>
+            <p>No new notifications.</p>
+            <Button onClick={handleCloseNotifications}>Close</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-bold mb-4">Settings</h2>
+
+            <div className="mb-4">
+              <h3 className="text-md font-semibold mb-2">Notification Settings</h3>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="newComments"
+                    name="newComments"
+                    checked={notificationSettings.newComments}
+                    onChange={handleNotificationSettingChange}
+                  />
+                  <label htmlFor="newComments" className="ml-2">
+                    New Comments
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="newLikes"
+                    name="newLikes"
+                    checked={notificationSettings.newLikes}
+                    onChange={handleNotificationSettingChange}
+                  />
+                  <label htmlFor="newLikes" className="ml-2">
+                    New Likes
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="newFollowers"
+                    name="newFollowers"
+                    checked={notificationSettings.newFollowers}
+                    onChange={handleNotificationSettingChange}
+                  />
+                  <label htmlFor="newFollowers" className="ml-2">
+                    New Followers
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="projectUpdates"
+                    name="projectUpdates"
+                    checked={notificationSettings.projectUpdates}
+                    onChange={handleNotificationSettingChange}
+                  />
+                  <label htmlFor="projectUpdates" className="ml-2">
+                    Project Updates
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-md font-semibold mb-2">Profile Settings</h3>
+              {/* ... add profile settings inputs here ... */}
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-md font-semibold mb-2">Account Settings</h3>
+              {/* ... add account settings inputs here ... */}
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={handleSaveSettings}>Save</Button>
+              <Button onClick={handleCloseSettings} variant="ghost">Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
