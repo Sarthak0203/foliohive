@@ -1,4 +1,6 @@
 // lib/utils.js
+import { twMerge } from "tailwind-merge"
+import { clsx } from "clsx"
 
 /**
  * Merges class names efficiently, handling:
@@ -7,31 +9,23 @@
  * - Undefined/null values
  * - Duplicate classes
  * - Arrays of classes
+ * - Tailwind classes (using twMerge)
  * 
  * @param {...(string|boolean|undefined|null|Array)} classes - Class names to merge
  * @returns {string} Merged class names
  */
 export function cn(...classes) {
-  return classes
-    .flat()
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-    .split(/\s+/)
-    .filter((value, index, self) => self.indexOf(value) === index)
-    .join(' ');
+  return twMerge(
+    classes
+      .flat()
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+      .split(/\s+/)
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .join(' ')
+  );
 }
-
-// Example usage:
-/*
-cn('base-class', 
-   condition && 'conditional-class',
-   ['array-class-1', 'array-class-2'],
-   undefined,
-   null,
-   false && 'wont-show',
-   'duplicate duplicate')
-*/
 
 /**
  * Conditionally joins class names
@@ -92,3 +86,20 @@ export function truncateText(text, length) {
   if (text.length <= length) return text;
   return text.slice(0, length) + '...';
 }
+
+// Example usage:
+/*
+cn('base-class', 
+   condition && 'conditional-class',
+   ['array-class-1', 'array-class-2'],
+   undefined,
+   null,
+   false && 'wont-show',
+   'duplicate duplicate')
+
+classNames({
+  'base-class': true,
+  'active': isActive,
+  'disabled': isDisabled
+})
+*/

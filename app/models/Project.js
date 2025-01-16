@@ -15,6 +15,8 @@ const projectSchema = new mongoose.Schema(
       unique: true,
       sparse: true
     },
+    githubLink: { type: String },
+    demoLink: { type: String },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     tags: [{ type: String }],
     likes: { type: Number, default: 0 },

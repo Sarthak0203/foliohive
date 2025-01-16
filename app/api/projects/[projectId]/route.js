@@ -35,7 +35,9 @@ export async function GET(request, { params }) {
       projectId: project._id.toString(), // Set the projectId to be the Mongo _id as string
       name: project.name,
       description: project.description,
-      owner: project.owner,  // Assuming `owner` is a reference to another model like `User`
+      owner: project.owner,
+      githubLink: project.githubLink,
+      demoLink: project.demoLink,
       tags: project.tags,
       likes: project.likes,
       comments: project.comments,
